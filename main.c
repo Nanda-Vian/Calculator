@@ -28,7 +28,6 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/pgmspace.h>
-#include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "lcd.h"
@@ -36,19 +35,23 @@
 
 unsigned char simbol_angka[10]	= {Satu,Dua,Tiga,Empat,Lima,Enam,Tujuh,Delapan,Sembilan,Nol};
 unsigned char simbol[6]			= {Tambah,Kurang,Bagi,Kali,Sama_Dengan}; 
-char print_buffer[20], Operator[8];
+char Operator[8];
 volatile unsigned char Angka_Huruf;
 volatile uint8_t Angka_Sementara, Busy_Flag;
 uint8_t Key_Pressed, i;
-uint8_t Counter_Operator =0, Counter_Operand = 0, Counter_angka = 0, Counter_LCD = 0; //Counter
+uint8_t Counter_Operator = 0, Counter_Operand = 0, Counter_LCD = 0; //Counter
+uint8_t Counter_angka = 0;
 uint8_t Operator_flag = 0, Sign_flag = 0, Output_flag = 0; 
-double operand[8];
+float operand[8], Hasil;
 
 void RESET_CALC(void);
 void Perhitungan(uint8_t Posisi_operand, uint8_t Posisi_Operator);
 	
 const unsigned char Kelebihan[] PROGMEM = "Kelebihan CUK!";
 const unsigned char Masukin[] PROGMEM = "Masukin Angka!";
+const unsigned char Hasil_LCD [22]= {0};
+
+
 
 int main(void)
 {
@@ -67,8 +70,7 @@ int main(void)
 	PCMSK1 = (1<<PCINT13);
 	sei();
 	
-	
-	
+
 	
  	while(1){
 		  while (Busy_Flag == 0)
@@ -92,20 +94,22 @@ int main(void)
 			  _delay_loop_1(50);
 		  }
 		  
+		
 		  lcd_putc(Angka_Huruf);
-		  /*
+		  
 		  if(Counter_LCD<=16){
-			  if(Counter_angka==0){
+			  if(Counter_angka == 0){
 				  operand[Counter_Operand]= Angka_Sementara;
-			  }
-			  
-			  operand[Counter_Operand] *= 10.0;
-			  operand[Counter_Operand] += Angka_Sementara;
-			  
+			  } 
+			  if(Counter_angka != 0){
+				  operand[Counter_Operand] *= 10.0;
+				  operand[Counter_Operand] += Angka_Sementara;
+			  }  
 			  if(Angka_Huruf==Tambah||Angka_Huruf==Kurang||Angka_Huruf==Kali||Angka_Huruf==Bagi){
 				  Counter_Operator++;
 				  Operator[Counter_Operator] = Angka_Huruf;
 				  Counter_Operand++;
+				  Counter_angka = 0;
 			  }
 			  
 			  if(Counter_Operand >8 || Counter_Operator >8){
@@ -116,15 +120,17 @@ int main(void)
 			  if(Angka_Huruf==Sama_Dengan){
 				  if(Counter_Operator==0){
 					lcd_puts_p((char*) Masukin);
+				  } else {
+					Perhitungan(Counter_Operand, Counter_Operator);
 				  }
-				  					  
 			  }
-			  Counter_angka++;
+			  Counter_angka ++;
+			  Counter_LCD ++;
 			  			  				  
 		  } else {
-			  lcd_puts_p((char*) Kelebihan);
 			  RESET_CALC();
-		  }*/
+			  lcd_puts_p((char*) Kelebihan);
+		  }
 		  sei();
 		  Busy_Flag = 0;
 		    
@@ -164,7 +170,7 @@ ISR (PCINT1_vect){
 		Busy_Flag = 1;
 		Angka_Huruf = Tiga;
 		Angka_Sementara = 3;
-	} else lcd_clrscr();
+	} else RESET_CALC();
 }
 
 ISR (INT0_vect){
@@ -195,17 +201,52 @@ ISR (INT1_vect){
 	Busy_Flag = 1;
 }
 
-/*
+
 void RESET_CALC (void){
 	for(i = 0; i <= 8; ++i){
 		Operator[i] = 0;
 		operand[i] = 0.0;
 	}
 	Counter_Operand = Counter_Operator = Counter_angka = Counter_LCD = 0;
+	lcd_clrscr();
 }
 
 void Perhitungan(uint8_t Posisi_operand, uint8_t Posisi_Operator){
-	
-}*/
+	for(i = 1; i<= Posisi_operand; i++){
+		uint8_t j = i-1;
+		switch (Operator[i]){
+			case Tambah:
+			Hasil = operand[j] + operand[i];
+			 
+			lcd_clrscr();
+			sprintf((char*) Hasil_LCD, "%.5f", operand[j]);
+			lcd_puts((char*) Hasil_LCD);
+			lcd_gotoxy(0,1);
+			printf((char*) Hasil_LCD, "%.5f", operand[i]);
+			lcd_puts((char*) Hasil_LCD);
+			
+			
+			operand[j] = Hasil;
+			break;
+			case Kurang:
+			Hasil = operand[j] - operand[i];
+			operand[j] = Hasil;
+			break;
+			case Kali:
+			Hasil = operand[j] * operand[i];
+			operand[j] = Hasil;
+			break;
+			case Bagi:
+			Hasil = operand[j] / operand[i];
+			operand[j] = Hasil;
+			break;
+		}
+	}
+	/*sprintf((char*) Hasil_LCD, "%.5f", Hasil);
+	lcd_gotoxy(0,1);
+	lcd_puts((char*) Hasil_LCD);*/
+
+	 
+}
 
 
