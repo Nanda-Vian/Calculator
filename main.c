@@ -45,7 +45,7 @@ uint8_t Operator_flag = 0, Sign_flag = 0, Output_flag = 0;
 float operand[8], Hasil;
 
 void RESET_CALC(void);
-void Perhitungan(uint8_t Posisi_operand, uint8_t Posisi_Operator);
+void Perhitungan(uint8_t Posisi_Operator);
 	
 const unsigned char Kelebihan[] PROGMEM = "Kelebihan CUK!";
 const unsigned char Masukin[] PROGMEM = "Masukin Angka!";
@@ -94,21 +94,23 @@ int main(void)
 		  
 		
 		  lcd_putc(Angka_Huruf);
-		  
-		  if(Counter_LCD<=16){			  
+		  if(Angka_Huruf==Sama_Dengan){
+			    if(Counter_Operator==0){
+				    lcd_puts_p((char*) Masukin);
+				    } else {
+				    Perhitungan(Counter_Operator);
+			    }
+		  }else if(Counter_LCD<=16){			  
 			  if(Counter_Operand >8 || Counter_Operator >8){
 				  lcd_puts_p((char*) Kelebihan);
 				  RESET_CALC();
-			  }
-			  
+			  }  
 			  if(Angka_Huruf==Tambah||Angka_Huruf==Kurang||Angka_Huruf==Kali||Angka_Huruf==Bagi){
 				  Counter_angka = -1;
 				  Counter_Operator++;
 				  Operator[Counter_Operator] = Angka_Huruf;
 				  Counter_Operand++;
 			  }
-			  
-			  
 			  
 			  if(Counter_angka == 0){
 				  operand[Counter_Operand]= Angka_Sementara;
@@ -117,18 +119,6 @@ int main(void)
 				  operand[Counter_Operand] *= 10.0;
 				  operand[Counter_Operand] += Angka_Sementara;
 				  Counter_angka++; 
-				  
-				  sprintf((char*) Hasil_LCD, "%.1f, %.1f, %d", operand[1], operand[0], Counter_angka);
-				  lcd_gotoxy(0,1);
-				  lcd_puts((char*) Hasil_LCD);
-			  }
-			  lcd_home();
-			  if(Angka_Huruf==Sama_Dengan){
-				  if(Counter_Operator==0){
-					lcd_puts_p((char*) Masukin);
-				  } else {
-					Perhitungan(Counter_Operand, Counter_Operator);
-				  }
 			  }
 			  Counter_LCD ++;
 			  			  				  
@@ -216,34 +206,32 @@ void RESET_CALC (void){
 	lcd_clrscr();
 }
 
-void Perhitungan(uint8_t Posisi_operand, uint8_t Posisi_Operator){
-	for(i = 1; i<= Posisi_operand; i++){
+void Perhitungan(uint8_t Posisi_Operator){
+	for(i = 1; i<= Posisi_Operator; ++i){
 		uint8_t j = i-1;
 		switch (Operator[i]){
 			case Tambah:
 			Hasil = operand[j] + operand[i];
-			operand[j] = Hasil;
+			operand[i] = Hasil;
 			break;
 			case Kurang:
 			Hasil = operand[j] - operand[i];
-			operand[j] = Hasil;
+			operand[i] = Hasil;
 			break;
 			case Kali:
 			Hasil = operand[j] * operand[i];
-			operand[j] = Hasil;
+			operand[i] = Hasil;
 			break;
 			case Bagi:
 			Hasil = operand[j] / operand[i];
-			operand[j] = Hasil;
+			operand[i] = Hasil;
 			break;
 		}
 	}
 
-	//sprintf((char*) Hasil_LCD, "%.5f", Hasil);
-	//lcd_gotoxy(0,1);
-	//lcd_puts((char*) Hasil_LCD);
-
-	 
+	sprintf((char*) Hasil_LCD, "%.5f", Hasil);
+	lcd_gotoxy(0,1);
+	lcd_puts((char*) Hasil_LCD); 
 }
 
 
